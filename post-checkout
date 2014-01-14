@@ -62,8 +62,12 @@ end
 
 def pleasant_lawyer_lookup(branch)
   if defined?(PleasantLawyer)
-    number = PleasantLawyer.convert branch.gsub(/[_-]/, ' ')
-    number unless number.zero?
+    begin
+      number = PleasantLawyer.convert branch.gsub(/[_-]/, ' ')
+      number unless number.zero?
+    rescue
+      # Pleasant Lawyer doesn't handle invalid input very well
+    end
   end
 end
 

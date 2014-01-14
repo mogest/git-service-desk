@@ -32,7 +32,7 @@ function gb() {
 
 ## Pleasant Lawyer (optional)
 
-If you have the pleasant-lawyer gem installed, you may name your feature branches after the record's phrase, words being
+If you have the [pleasant-lawyer](https://github.com/ezza/pleasant-lawyer) gem installed, you may name your feature branches after the record's phrase, words being
 separated with a dash or underscore.  git-service-desk will also prepend the record phrase to the description.
 
 ## Credits
