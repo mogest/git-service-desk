@@ -32,4 +32,4 @@ function gb() {
 
 ## Credits
 
-Credit to @kuahyeow for the original idea and code.
+Credit to [@kuahyeow](https://github.com/kuahyeow) for the original idea and code.
