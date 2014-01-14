@@ -1,0 +1,65 @@
+#!/usr/bin/env ruby
+#
+# Installation:
+#
+# 1) Get your API key from https://desk.gotoassist.com/my_api_token and put it in a file named
+#    ~/.service_desk_api_token
+# 2) Rename this file post-checkout
+# 3) Make sure it is chmod +x
+# 4) Put it into the .git/hooks directory of the project you want it to work on
+#
+
+require 'shellwords'
+require 'net/https'
+require 'json'
+
+def set_git_branch_description(branch, message)
+  `git config --local --unset branch.#{Shellwords.shellescape branch}.description`
+  `git config --local --add branch.#{Shellwords.shellescape branch}.description #{Shellwords.shellescape message}`
+end
+
+def get_git_branch_description(branch)
+  `git config --local branch.#{Shellwords.shellescape branch}.description`.chomp
+end
+
+def get_beetil_title(number)
+  api_token = File.read("#{File.expand_path("~")}/.service_desk_api_token").chomp
+
+  $stderr.puts "Retrieving title for ##{number} from Service Desk..."
+
+  uri = URI.parse("https://deskapi.gotoassist.com/v1/beetils/#{number}.json")
+
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
+  http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+  req = Net::HTTP::Get.new(uri)
+  req.basic_auth "x", api_token
+
+  res = http.request(req)
+
+  if res.code == "302"
+    uri = URI.parse(res["location"])
+    req = Net::HTTP::Get.new(uri)
+    req.basic_auth "x", api_token
+
+    res = http.request(req)
+    if res.code == "200"
+      data = JSON.parse(res.body)
+      data["result"].values.first["title"] if data["status"] == "Success"
+    end
+  end
+end
+
+previous_head, new_head, branch_checkout_flag = ARGV
+
+if branch_checkout_flag == "1"
+  branch = File.read("#{File.dirname(__FILE__)}/../HEAD").chomp.split("/").last
+  if matches = branch.match(/^b(\d+)$/)
+    desc = get_git_branch_description(branch)
+    if desc.empty? && desc = get_beetil_title(matches[1])
+      set_git_branch_description branch, desc
+    end
+    $stderr.puts "\033[0;32m##{matches[1]} \033[0;36m#{desc}\033[0m"
+  end
+end
