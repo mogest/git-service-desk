@@ -1,17 +1,13 @@
 #!/usr/bin/env ruby
-#
-# Installation:
-#
-# 1) Get your API key from https://desk.gotoassist.com/my_api_token and put it in a file named
-#    ~/.service_desk_api_token
-# 2) Rename this file post-checkout
-# 3) Make sure it is chmod +x
-# 4) Put it into the .git/hooks directory of the project you want it to work on
-#
 
 require 'shellwords'
 require 'net/https'
 require 'json'
+
+begin
+  require 'pleasant_lawyer'
+rescue LoadError
+end
 
 def set_git_branch_description(branch, message)
   `git config --local --unset branch.#{Shellwords.shellescape branch}.description`
@@ -51,15 +47,33 @@ def get_beetil_title(number)
   end
 end
 
+def handle_feature_branch(branch, number)
+  desc = get_git_branch_description(branch)
+  if desc.empty? && desc = get_beetil_title(number)
+    if defined?(PleasantLawyer)
+      desc = %("#{PleasantLawyer.number_to_words(number.to_i).join(" ")}" #{desc})
+    end
+    set_git_branch_description branch, desc
+  end
+  desc.chomp! if desc
+
+  $stderr.puts "\033[0;32m##{number} \033[0;36m#{desc}\033[0m"
+end
+
+def pleasant_lawyer_lookup(branch)
+  if defined?(PleasantLawyer)
+    number = PleasantLawyer.convert branch.gsub(/[_-]/, ' ')
+    number unless number.zero?
+  end
+end
+
 previous_head, new_head, branch_checkout_flag = ARGV
 
 if branch_checkout_flag == "1"
   branch = File.read("#{File.dirname(__FILE__)}/../HEAD").chomp.split("/").last
-  if matches = branch.match(/^b(\d+)$/)
-    desc = get_git_branch_description(branch)
-    if desc.empty? && desc = get_beetil_title(matches[1])
-      set_git_branch_description branch, desc
-    end
-    $stderr.puts "\033[0;32m##{matches[1]} \033[0;36m#{desc}\033[0m"
-  end
+
+  (matches = branch.match(/^b(\d+)$/)) && number = matches[1]
+  number ||= pleasant_lawyer_lookup(branch)
+
+  handle_feature_branch branch, number if number
 end
