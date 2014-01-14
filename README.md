@@ -29,3 +29,7 @@ function gb() {
     done
 }
 ```
+
+## Credits
+
+Credit to @kuahyeow for the original idea and code.
